@@ -14,7 +14,8 @@ set(imgui_sources
 
 
 find_package(glfw3 REQUIRED)
+find_package(glm REQUIRED)
 
 add_executable(example example.cpp glad/source/glad.c ${imgui_sources})
 target_include_directories(example PRIVATE glad/include imgui/include)
-target_link_libraries(example glfw)
+target_link_libraries(example glfw glm)
