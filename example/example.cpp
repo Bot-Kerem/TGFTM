@@ -164,13 +164,13 @@ int main(){
             
             ImGui::InputTextWithHint(" ", "Map Path", buf, 50);
             if(ImGui::Button("Load")){
-                //if(exists_test0(buf)){
+                if(exists_test0(std::string(std::string("./../maps/") + std::string(buf)))){
                     loadMap(std::string(std::string("./../maps/") + std::string(buf)).c_str());
-                //}
-                //else{
-                //    std::cout << "File not exists:\n";
-                //    std::cout << "File: " << buf << "\n";
-                //}
+                }
+                else{
+                    std::cout << "File not exists:\n";
+                    std::cout << "File: " << std::string(std::string("./../maps/") + std::string(buf)) << "\n";
+                }
             }
             ImGui::SliderFloat("  ", &(scalevec.y), 0, 1);
         }
