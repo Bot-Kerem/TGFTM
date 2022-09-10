@@ -19,6 +19,7 @@
 std::string openFile(std::string path);
 
 void cursorcb(GLFWwindow* window, double posx, double posy);
+void scrollcb(GLFWwindow* window, double xoffset, double yoffset);
 
 Camera camera;
 
@@ -32,6 +33,7 @@ int main(){
     GLFWwindow* window = glfwCreateWindow(800, 600, "Example", nullptr, nullptr);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, cursorcb);
+    glfwSetScrollCallback(window, scrollcb);
     glfwMakeContextCurrent(window);
 
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -99,10 +101,10 @@ int main(){
     unsigned int proj = glGetUniformLocation(m_Program, "proj");
 
     float* vert;
-    constexpr int width = 2;
-    constexpr int height = 4;
-    constexpr float step = 0.5f;
-    generateMap(width, height, &vert, step);
+    constexpr int width = 20;
+    constexpr int height = 20;
+    constexpr float step = 0.1f;
+    generateMap(&vert, step, width, height);
     constexpr float x = width * step / 2;
     constexpr float y = height * step / 2;
     constexpr int numVert = width * height * 6;
@@ -200,4 +202,8 @@ void cursorcb(GLFWwindow* window, double posx, double posy){
     camera.update(xOffset, yOffset);
 
     glfwSetCursorPos(window, (400), (300));
+}
+
+void scrollcb(GLFWwindow* window, double xoffset, double yoffset){
+    camera.dis += yoffset * 0.2f;
 }

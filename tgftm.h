@@ -22,8 +22,6 @@ void freeImage(void* data){
     stbi_image_free(data);
 }
 
-#include <iostream>
-
 struct Vector3{
     float x;
     float y;
@@ -41,7 +39,7 @@ struct Square{
     Triangle t2;
 };
 
-void generateMap(int width, int height, float** vert, float step = 0.1f){
+void generateMap(float** vert, float step = 0.1f, int width = 0, int height = 0){
     Square* squares = (Square*)malloc(width * height * sizeof(Square));
     for(int x = 0; x < width; x++){
         for(int y = 0; y < height; y++){
@@ -49,10 +47,12 @@ void generateMap(int width, int height, float** vert, float step = 0.1f){
             //  ||     ||  
             //  ||     ||
             //  p2 = = p4
-            Vector3 p1{x * step, 0.0f, y * step};
-            Vector3 p2{x * step, 0.0f, (y + 1) * step};
-            Vector3 p3{(x + 1) * step, 0.0f, y * step};
-            Vector3 p4{(x + 1) * step, 0.0f, (y + 1) * step};
+            float x1_y = 0.0f;
+            float x2_y = 0.0f;
+            Vector3 p1{x * step, x1_y, y * step};
+            Vector3 p2{x * step,x1_y, (y + 1) * step};
+            Vector3 p3{(x + 1) * step, x2_y, y * step};
+            Vector3 p4{(x + 1) * step, x2_y, (y + 1) * step};
 
             squares[x + (y * width)] = Square{Triangle{p1, p2, p3}, Triangle{p2, p3, p4}};
         }
