@@ -24,7 +24,7 @@ class Camera{
 }
         // Returns perspective matrix
         glm::mat4 getPerspective(){
-    return glm::perspective(Fov, 800.0f/600.0f, 0.1f, 100.0f);
+    return glm::perspective(Fov, 800.0f/600.0f, 0.01f, 100.0f);
 }
 
     void update(float xOffset, float yOffset){

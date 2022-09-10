@@ -104,7 +104,7 @@ int main(){
     constexpr int width = 20;
     constexpr int height = 20;
     constexpr float step = 0.1f;
-    generateMap(&vert, step, width, height);
+    generateMap("./../maps/sardinia.jpg", &vert, step, width, height);
     constexpr float x = width * step / 2;
     constexpr float y = height * step / 2;
     constexpr int numVert = width * height * 6;
@@ -205,5 +205,8 @@ void cursorcb(GLFWwindow* window, double posx, double posy){
 }
 
 void scrollcb(GLFWwindow* window, double xoffset, double yoffset){
-    camera.dis += yoffset * 0.2f;
+    camera.dis -= yoffset * 0.2f;
+    if(camera.dis < 0.1){
+        camera.dis = 0.1;
+    }
 }
