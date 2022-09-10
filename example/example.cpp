@@ -30,10 +30,13 @@ int main(){
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(800, 600, "Example", nullptr, nullptr);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, cursorcb);
     glfwMakeContextCurrent(window);
 
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+    //************************************************************
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -56,28 +59,6 @@ int main(){
 
 
     //****************************************
-    float* vertdata;
-    int* indices;
-    int faces = getMapVertices("./../maps/sardinia.png", &vertdata, &indices);
-    
-    unsigned int vao;
-    unsigned int vbo;
-    unsigned int ebo;
-
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, faces * sizeof(float), vertdata, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces * 2, indices, GL_STATIC_DRAW);
-
-    glBindVertexArray(vao);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
-    glEnableVertexAttribArray(0);
-    
 
     //****** SHADER
 
@@ -113,32 +94,54 @@ int main(){
     //-***** SHADER
 
     unsigned int color = glGetUniformLocation(m_Program, "color");
-    unsigned int pos = glGetUniformLocation(m_Program, "posz");
+    unsigned int pos = glGetUniformLocation(m_Program, "pos");
     unsigned int view = glGetUniformLocation(m_Program, "view");
     unsigned int proj = glGetUniformLocation(m_Program, "proj");
 
+    float* vert;
+    constexpr int width = 2;
+    constexpr int height = 4;
+    constexpr float step = 0.5f;
+    generateMap(width, height, &vert, step);
+    constexpr float x = width * step / 2;
+    constexpr float y = height * step / 2;
+    constexpr int numVert = width * height * 6;
+
     glClearColor(0.31f, 0.31f, 0.31f, 1.0f);
-    
-    camera.Position = glm::vec3(0.0f, 0.1f, 0.0f);
+
+    unsigned int vao, vbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Square) * width * height, vert, GL_STATIC_DRAW);
+
+    glBindVertexArray(vao);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
+    glEnableVertexAttribArray(0);
+    camera.dis = 2.0f;
     
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
 
+        if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS){
+            glfwSetWindowShouldClose(window, 1);
+        }
+
         glClear(GL_COLOR_BUFFER_BIT);
-        float wstep = 1.0f / 800.0f * 3;
-        float hstep = 1.0f / 600.0f * 3;
+
         glUseProgram(m_Program);
         
         glUniformMatrix4fv(view, 1, GL_FALSE, (float*)glm::value_ptr(camera.getView()));
         glUniformMatrix4fv(proj, 1, GL_FALSE, (float*)glm::value_ptr(camera.getPerspective()));
+        glUniform3f(pos, x, 0, y);
 
 
         //glBindTexture(GL_TEXTURE_2D, texture);
-        glEnable(GL_POLYGON_MODE);
         glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLE_STRIP, faces, GL_UNSIGNED_INT, indices);
-
+        glPolygonMode(GL_FRONT, GL_LINE);
+        glDrawArrays(GL_TRIANGLES, 0, numVert);
         
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -146,7 +149,7 @@ int main(){
         
         ImGui::ShowDemoWindow();
 
-        if(ImGui::Begin(" Map")){
+        if(ImGui::Begin(" Maap")){
 
             
             ImGui::BeginChild("Map");
@@ -173,6 +176,8 @@ int main(){
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
+    free(vert);
+
     glfwDestroyWindow(window);
     glfwTerminate();
     
@@ -190,7 +195,7 @@ std::string openFile(std::string path){
 
 void cursorcb(GLFWwindow* window, double posx, double posy){
     float xOffset = posx - (400);
-    float yOffset = (300) - posy;
+    float yOffset = posy - (300);
 
     camera.update(xOffset, yOffset);
 

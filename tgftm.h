@@ -22,40 +22,42 @@ void freeImage(void* data){
     stbi_image_free(data);
 }
 
-int getMapVertices(const char* mapName ,float** buffer, int** indices){
-    int faces = 0;
-    int width, height;
-    unsigned char* data = loadImageFromFile(mapName, &width, &height);
-    if(!data){
-        return 0;
-    }
-    
-    (*buffer) = (float*)malloc(width * height * 3 * sizeof(float));
-    (*indices) = (int*)malloc((width -1) * (height - 1) * 6 * sizeof(int));
-    float stepSize = 1.0f / (float)width;
-    for(int y = 0; y < height; y++){
-        for(int x = 0; x < width; x++){
-            float* vert = (float*)(data[(x * 3) + (y * width * 3)]);
-            (*buffer)[(x * 3) + (y * width * 3)    ] = x * stepSize; // x
-            (*buffer)[(x * 3) + (y * width * 3) + 1] = 0;
-            (*buffer)[(x * 3) + (y * width * 3) + 2] = y * stepSize;
-            faces++;
-        }
-    }
-    int dir = 1;
-    for(int y = 0; y < height - 1; y++){
-        for(int x = 0; x < width - 1; x++){
-            int* face = &((*indices)[(y * width * 3 + x * 6)]);
-            face[0] = x + (width * y);
-            face[1] = x + (width * (y + 1));
-        }
-        dir *= -1;
-    }
-    return faces;
-}
+#include <iostream>
 
-void freeMapVertices(float** buffer){
-    free(*buffer);
+struct Vector3{
+    float x;
+    float y;
+    float z;
+};
+
+struct Triangle{
+    Vector3 p1;
+    Vector3 p2;
+    Vector3 p3;
+};
+
+struct Square{
+    Triangle t1;
+    Triangle t2;
+};
+
+void generateMap(int width, int height, float** vert, float step = 0.1f){
+    Square* squares = (Square*)malloc(width * height * sizeof(Square));
+    for(int x = 0; x < width; x++){
+        for(int y = 0; y < height; y++){
+            //  p1 = = p3
+            //  ||     ||  
+            //  ||     ||
+            //  p2 = = p4
+            Vector3 p1{x * step, 0.0f, y * step};
+            Vector3 p2{x * step, 0.0f, (y + 1) * step};
+            Vector3 p3{(x + 1) * step, 0.0f, y * step};
+            Vector3 p4{(x + 1) * step, 0.0f, (y + 1) * step};
+
+            squares[x + (y * width)] = Square{Triangle{p1, p2, p3}, Triangle{p2, p3, p4}};
+        }
+    }
+    (*vert) = (float*)(squares);
 }
 
 #endif
