@@ -39,7 +39,7 @@ struct Square{
     Triangle t2;
 };
 #include <iostream>
-void generateMap(const char* path, float** vert, float step = 0.1f, int width, int height){
+void generateMap(const char* path, float** vert, float step = 0.1f, int width = 0, int height = 0){
     int img_width, img_height;
     unsigned char* image_data = loadImageFromFile(path, &img_width, &img_height);
     if(!image_data){
@@ -53,10 +53,11 @@ void generateMap(const char* path, float** vert, float step = 0.1f, int width, i
             //  ||     ||  
             //  ||     ||
             //  p2 = = p4
-            float x0_y0_h = ((image_data[(x * 3) + (y * img_width)] / 255.0f) - (image_data[((x * 3)+ 2) + (y * img_width)]) / 255.0f) * ((image_data[((x * 3) + 1) + (y * img_width)]) / 255.0f);
-            float x1_y0_h = ((image_data[((x + 1) * 3) + (y * img_width)] / 255.0f) - (image_data[(((x + 1) * 3)+ 2) + (y * img_width)]) / 255.0f) * ((image_data[(((x + 1) * 3) + 1) + (y * img_width)]) / 255.0f);
-            float x0_y1_h = ((image_data[(x * 3) + ((y + 1) * img_width)] / 255.0f) - (image_data[((x * 3)+ 2) + ((y + 1) * img_width)]) / 255.0f) * ((image_data[((x * 3) + 1) + ((y + 1) * img_width)]) / 255.0f);
-            float x1_y1_h = ((image_data[((x + 1) * 3) + ((y + 1) * img_width)] / 255.0f) - (image_data[(((x + 1) * 3)+ 2) + ((y + 1) * img_width)]) / 255.0f) * ((image_data[(((x + 1) * 3) + 1) + ((y + 1) * img_width)]) / 255.0f);
+            float x0_y0_h = ((image_data[(x * 3) + (y * img_width)] / 255.0f) - (image_data[((x * 3)+ 2) + (y * img_width)]) / 255.0f);// * ((image_data[((x * 3) + 1) + (y * img_width)]) / 255.0f);
+            std::cout << x0_y0_h << "\n";
+            float x1_y0_h = ((image_data[((x + 1) * 3) + (y * img_width)] / 255.0f) - (image_data[(((x + 1) * 3)+ 2) + (y * img_width)]) / 255.0f);// * ((image_data[(((x + 1) * 3) + 1) + (y * img_width)]) / 255.0f);
+            float x0_y1_h = ((image_data[(x * 3) + ((y + 1) * img_width)] / 255.0f) - (image_data[((x * 3)+ 2) + ((y + 1) * img_width)]) / 255.0f);// * ((image_data[((x * 3) + 1) + ((y + 1) * img_width)]) / 255.0f);
+            float x1_y1_h = ((image_data[((x + 1) * 3) + ((y + 1) * img_width)] / 255.0f) - (image_data[(((x + 1) * 3)+ 2) + ((y + 1) * img_width)]) / 255.0f);// * ((image_data[(((x + 1) * 3) + 1) + ((y + 1) * img_width)]) / 255.0f);
             Vector3 p1{x * step, x0_y0_h, y * step};
             Vector3 p2{x * step,x0_y1_h, (y + 1) * step};
             Vector3 p3{(x + 1) * step, x1_y0_h, y * step};
