@@ -18,10 +18,32 @@
 
 std::string openFile(std::string path);
 
-void cursorcb(GLFWwindow* window, double posx, double posy);
+void loadMap(const char* mapName);
+
 void scrollcb(GLFWwindow* window, double xoffset, double yoffset);
+void cursorCallback(GLFWwindow *window, double InxPos, double InyPos);
+void entercb(GLFWwindow* window, int entered);
+
+inline bool exists_test0 (const std::string& name) {
+    std::ifstream f(name.c_str());
+    return f.good();
+}
 
 Camera camera;
+
+bool isEntered = false;
+
+bool isLoaded = false;
+
+float x;
+float y;
+unsigned int vao = 0;
+unsigned int vbo = 0;
+int numVert;
+bool process = false;
+
+float lastX = 400;
+float lastY = 300;
 
 int main(){
     glfwInit();
@@ -31,9 +53,9 @@ int main(){
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(800, 600, "Example", nullptr, nullptr);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, cursorcb);
+    glfwSetCursorPosCallback(window, cursorCallback);
     glfwSetScrollCallback(window, scrollcb);
+    glfwSetCursorEnterCallback(window, entercb);
     glfwMakeContextCurrent(window);
 
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -72,9 +94,7 @@ int main(){
         const char* sourceCode = &vertexSourceCode[0];
         glShaderSource(VertexShader, 1, &sourceCode, 0);
         glCompileShader(VertexShader);
-    }char log[512];
-    glGetShaderInfoLog(VertexShader, 512, 0, log);
-    std::cout << log << std::endl;
+    }
 
     unsigned int FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     {
@@ -97,31 +117,18 @@ int main(){
 
     unsigned int color = glGetUniformLocation(m_Program, "color");
     unsigned int pos = glGetUniformLocation(m_Program, "pos");
+    unsigned int rot = glGetUniformLocation(m_Program, "rot");
+    unsigned int scale = glGetUniformLocation(m_Program, "scale");
     unsigned int view = glGetUniformLocation(m_Program, "view");
     unsigned int proj = glGetUniformLocation(m_Program, "proj");
 
-    float* vert;
-    constexpr int width = 20;
-    constexpr int height = 20;
-    constexpr float step = 0.1f;
-    generateMap("./../maps/sardinia.jpg", &vert, step, width, height);
-    constexpr float x = width * step / 2;
-    constexpr float y = height * step / 2;
-    constexpr int numVert = width * height * 6;
+    camera.dis = 2.0f;
+
+    glm::vec3 scalevec{1.0f, 0.4f, 1.0f};
+    glm::vec3 rotvec{-1.0f, 1.0f, 1.0f};
 
     glClearColor(0.31f, 0.31f, 0.31f, 1.0f);
-
-    unsigned int vao, vbo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Square) * width * height, vert, GL_STATIC_DRAW);
-
-    glBindVertexArray(vao);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
-    glEnableVertexAttribArray(0);
-    camera.dis = 2.0f;
+    char buf[50] = {'\0'};
     
     while (!glfwWindowShouldClose(window))
     {
@@ -132,38 +139,45 @@ int main(){
         }
 
         glClear(GL_COLOR_BUFFER_BIT);
-
-        glUseProgram(m_Program);
         
-        glUniformMatrix4fv(view, 1, GL_FALSE, (float*)glm::value_ptr(camera.getView()));
-        glUniformMatrix4fv(proj, 1, GL_FALSE, (float*)glm::value_ptr(camera.getPerspective()));
-        glUniform3f(pos, x, 0, y);
+        if(isLoaded){
+            glUseProgram(m_Program);
 
+            glUniformMatrix4fv(view, 1, GL_FALSE, (float*)glm::value_ptr(camera.getView()));
+            glUniformMatrix4fv(proj, 1, GL_FALSE, (float*)glm::value_ptr(camera.getPerspective()));
+            glUniform3f(pos, x, 0, -y);
+            glUniform3f(scale, scalevec.x, scalevec.y, scalevec.z);
+            glUniform3f(rot, rotvec.x, rotvec.y, rotvec.z);
 
-        //glBindTexture(GL_TEXTURE_2D, texture);
-        glBindVertexArray(vao);
-        glPolygonMode(GL_FRONT, GL_LINE);
-        glDrawArrays(GL_TRIANGLES, 0, numVert);
+            glBindVertexArray(vao);
+            glPolygonMode(GL_FRONT, GL_LINE);
+            glDrawArrays(GL_TRIANGLES, 0, numVert);
+        }
+
+        
         
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        
-        ImGui::ShowDemoWindow();
 
-        if(ImGui::Begin(" Maap")){
-
+        if(ImGui::Begin("Map")){
             
-            ImGui::BeginChild("Map");
-            
-
-            ImGui::EndChild();
+            ImGui::InputTextWithHint(" ", "Map Path", buf, 50);
+            if(ImGui::Button("Load")){
+                //if(exists_test0(buf)){
+                    loadMap(std::string(std::string("./../maps/") + std::string(buf)).c_str());
+                //}
+                //else{
+                //    std::cout << "File not exists:\n";
+                //    std::cout << "File: " << buf << "\n";
+                //}
+            }
+            ImGui::SliderFloat("  ", &(scalevec.y), 0, 1);
         }
         ImGui::End();
         
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    	
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             GLFWwindow* backup_current_context = glfwGetCurrentContext();
@@ -177,8 +191,6 @@ int main(){
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-
-    free(vert);
 
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -195,13 +207,57 @@ std::string openFile(std::string path){
     return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 }
 
-void cursorcb(GLFWwindow* window, double posx, double posy){
-    float xOffset = posx - (400);
-    float yOffset = posy - (300);
+void entercb(GLFWwindow* window, int entered){
+    
+    if(!entered &&process){
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        if(xpos <= 0){
+            lastX = 800;
+            xpos = 800 + xpos;
+        }
+        if(xpos >= 800){
+            lastX = 0;
+            xpos = xpos - 800;
+        }
+        if(ypos <= 0){
+            lastY = 600;
+            ypos = 600 + ypos;
+        }
+        if(ypos >= 600){
+            lastY = 0;
+            ypos = ypos - 600;
+        }
+        glfwSetCursorPos(window, xpos, ypos);
+    }
+    isEntered = entered;
+}
 
-    camera.update(xOffset, yOffset);
+void cursorCallback(GLFWwindow *window, double InxPos, double InyPos){
+    if(isEntered or process) {
+            bool clicked = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
 
-    glfwSetCursorPos(window, (400), (300));
+            const auto xPos = static_cast<float>(InxPos);
+            const auto yPos = static_cast<float>(InyPos);
+
+            if(clicked) {
+                if(process) {
+                    float xOffset =  xPos - lastX;
+                    float yOffset = lastY - yPos;
+                    camera.update(xOffset, -yOffset);
+                }
+                else{
+                    if(isEntered) {
+                        process = true;
+                    }
+                }
+            }
+            else {
+                process = false;
+            }
+            lastX = xPos;
+            lastY = yPos;
+        }
 }
 
 void scrollcb(GLFWwindow* window, double xoffset, double yoffset){
@@ -209,4 +265,36 @@ void scrollcb(GLFWwindow* window, double xoffset, double yoffset){
     if(camera.dis < 0.1){
         camera.dis = 0.1;
     }
+}
+
+void loadMap(const char* mapName){
+    float* vert;
+
+    if(vao){
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+    }
+
+    int width = 0;
+    int height = 0;
+    float step = 0.1f;
+    generateMap(mapName, &vert, &width, &height, step);
+    x = width * step / 2;
+    y = height * step / 2;
+    numVert = width * height * 6;
+
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Square) * width * height, vert, GL_STATIC_DRAW);
+
+    glBindVertexArray(vao);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
+    glEnableVertexAttribArray(0);
+    if(vert){
+        isLoaded = true;
+        free(vert);
+    }
+    
 }
